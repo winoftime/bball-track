@@ -46,14 +46,14 @@
                 <i data-lucide="dribbble" class="text-white w-12 h-12"></i>
             </div>
             <h1 class="text-3xl font-bold tracking-wider uppercase text-white">Pro Hoops</h1>
-            <p class="text-emerald-400 font-semibold tracking-widest text-sm">STAT TRACKER</p>
+            <p class="text-emerald-400 font-semibold tracking-widest text-sm">FIBA STAT TRACKER</p>
         </div>
 
         <button onclick="navToSetup()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform mb-6 shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
             <i data-lucide="play"></i> Start New Game
         </button>
 
-        <h2 class="text-gray-400 text-sm font-bold tracking-widest uppercase mb-3">Game History</h2>
+        <h2 class="text-gray-400 text-sm font-bold tracking-widest uppercase mb-3">Game History (Tap to view stats)</h2>
         <div id="history-list" class="flex-grow space-y-3 pb-6">
             </div>
     </div>
@@ -65,9 +65,15 @@
         <h2 class="text-2xl font-bold mb-6 text-center mt-2">Game Setup</h2>
 
         <div class="space-y-4 mb-6">
-            <div>
-                <label class="text-xs text-gray-400 font-semibold uppercase tracking-widest px-1">Opponent Name</label>
-                <input type="text" id="setup-opponent" placeholder="e.g. Bulls" class="w-full bg-gray-800 text-white rounded-xl p-3 border border-gray-700 focus:outline-none focus:border-emerald-500 mt-1">
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="text-xs text-gray-400 font-semibold uppercase tracking-widest px-1">Your Team</label>
+                    <input type="text" id="setup-home" placeholder="e.g. Lakers" class="w-full bg-gray-800 text-white rounded-xl p-3 border border-gray-700 focus:outline-none focus:border-emerald-500 mt-1">
+                </div>
+                <div class="flex-1">
+                    <label class="text-xs text-gray-400 font-semibold uppercase tracking-widest px-1">Opponent</label>
+                    <input type="text" id="setup-opponent" placeholder="e.g. Bulls" class="w-full bg-gray-800 text-white rounded-xl p-3 border border-gray-700 focus:outline-none focus:border-emerald-500 mt-1">
+                </div>
             </div>
             <div>
                 <label class="text-xs text-gray-400 font-semibold uppercase tracking-widest px-1">Date</label>
@@ -96,16 +102,17 @@
                 <div class="flex flex-col items-center justify-center cursor-pointer active:scale-95" onclick="advancePeriod()">
                     <p id="period-display" class="text-xs text-emerald-400 font-bold mb-1 uppercase tracking-widest px-2 py-0.5 bg-emerald-900/30 rounded-full">Qtr 1</p>
                 </div>
-                <div class="w-6"></div> </div>
+                <div class="w-6"></div> 
+            </div>
 
             <div class="flex justify-between items-center">
-                <div class="text-center flex-1">
-                    <p class="text-gray-400 text-xs font-bold tracking-widest uppercase">Home</p>
+                <div class="text-center flex-1 flex flex-col items-center relative">
+                    <p id="home-name-display" class="text-gray-400 text-xs font-bold tracking-widest uppercase truncate w-full max-w-[80px]">Home</p>
                     <p id="home-score" class="text-5xl font-bold text-white transition-all">0</p>
                 </div>
                 <div class="flex flex-col items-center justify-center flex-1">
                     <div id="clock-display" onclick="toggleClock()" class="digital-clock text-4xl text-emerald-400 tracking-wider cursor-pointer active:scale-95 transition-transform">
-                        12:00
+                        10:00
                     </div>
                 </div>
                 <div class="text-center flex-1 flex flex-col items-center relative">
@@ -235,7 +242,7 @@
 
     <div id="box-score-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col p-6">
         <div class="flex justify-between items-center mb-6 mt-4">
-            <h2 class="text-2xl font-bold">Box Score</h2>
+            <h2 id="box-score-title" class="text-2xl font-bold">Box Score</h2>
             <button onclick="closeModal('box-score-modal')" class="bg-gray-800 p-2 rounded-full active:scale-95"><i data-lucide="x"></i></button>
         </div>
         <div class="overflow-x-auto flex-grow bg-gray-900 rounded-xl border border-gray-700 no-scrollbar relative">
@@ -272,10 +279,11 @@
             activeGame: null 
         };
 
-        const SECONDS_PER_PERIOD = 720; // 12 mins
+        const SECONDS_PER_PERIOD = 600; // FIBA: 10 mins
         let timerInterval = null;
         let isClockRunning = false;
         let currentActivePlayerId = null;
+        let viewingGameData = null; // Used for the box score modal
 
         // --- CUSTOM UI COMPONENTS ---
         function showToast(message, type = 'info') {
@@ -322,7 +330,6 @@
             
             const cancelBtn = document.getElementById('btn-confirm-cancel');
             
-            // Clone buttons to clear old event listeners
             const newActionBtn = actionBtn.cloneNode(true);
             actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
             
@@ -377,6 +384,7 @@
         }
 
         function navToSetup() {
+            document.getElementById('setup-home').value = '';
             document.getElementById('setup-opponent').value = '';
             appState.masterRoster.forEach(p => p.selectedForGame = false);
             renderSetupRoster();
@@ -400,10 +408,10 @@
                 const resultText = isWin ? 'W' : 'L';
 
                 list.innerHTML += `
-                    <div class="bg-gray-800 rounded-xl p-4 flex justify-between items-center border border-gray-700">
+                    <div onclick="openBoxScoreModal(${game.id})" class="bg-gray-800 rounded-xl p-4 flex justify-between items-center border border-gray-700 cursor-pointer active:scale-95 transition-transform shadow-lg">
                         <div>
                             <p class="text-xs text-gray-400">${game.date}</p>
-                            <p class="font-bold text-lg">vs ${game.opponent}</p>
+                            <p class="font-bold text-lg">${game.homeTeam} vs ${game.opponent}</p>
                         </div>
                         <div class="text-right flex items-center gap-3">
                             <span class="${resultColor} font-bold text-xl">${resultText}</span>
@@ -520,7 +528,8 @@
 
         // --- GAME LOGIC ---
         function startGame() {
-            const opponent = document.getElementById('setup-opponent').value || "Away Team";
+            const homeTeam = document.getElementById('setup-home').value || "Home";
+            const opponent = document.getElementById('setup-opponent').value || "Away";
             const date = document.getElementById('setup-date').value;
             const selectedPlayers = appState.masterRoster.filter(p => p.selectedForGame);
 
@@ -538,6 +547,7 @@
 
             appState.activeGame = {
                 id: Date.now(),
+                homeTeam: homeTeam,
                 opponent: opponent,
                 date: date,
                 period: 1,
@@ -557,6 +567,7 @@
 
         function renderGameScreen() {
             const game = appState.activeGame;
+            document.getElementById('home-name-display').innerText = game.homeTeam;
             document.getElementById('away-name-display').innerText = game.opponent;
             document.getElementById('home-score').innerText = game.homeScore;
             document.getElementById('away-score').innerText = game.awayScore;
@@ -647,9 +658,16 @@
 
             onCourtPlayers.forEach(player => {
                 const isActive = player.id === currentActivePlayerId;
-                // Added ring-offset so the ring doesn't clip into the border radius bounds as easily
-                const activeClasses = isActive ? "bg-blue-600 ring-2 ring-offset-2 ring-offset-gray-900 ring-white scale-105" : "bg-gray-700 opacity-70";
                 
+                let activeClasses = isActive ? "bg-blue-600 ring-2 ring-offset-2 ring-offset-gray-900 ring-white scale-105" : "bg-gray-700 opacity-70";
+                
+                // FIBA Foul Trouble logic (4 = trouble, 5 = out)
+                if (player.stats.foul === 4) {
+                    activeClasses = "bg-orange-600 ring-4 ring-orange-500 ring-offset-2 ring-offset-gray-900 scale-105";
+                } else if (player.stats.foul >= 5) {
+                    activeClasses = "bg-red-600 ring-4 ring-red-500 ring-offset-2 ring-offset-gray-900 scale-105";
+                }
+
                 container.innerHTML += `
                     <div onclick="setActivePlayer(${player.id})" class="flex flex-col items-center cursor-pointer transition-all min-w-[70px]">
                         <div class="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold shadow-lg ${activeClasses} transition-all">
@@ -753,8 +771,8 @@
             }
 
             if (statChanges.foul) {
-                if (player.stats.foul >= 6) showToast(`🛑 FOULED OUT: ${player.name} has reached 6 fouls!`, "error");
-                else if (player.stats.foul === 5) showToast(`⚠️ WARNING: ${player.name} has 5 fouls.`, "warning");
+                if (player.stats.foul >= 5) showToast(`🛑 FOULED OUT: ${player.name} has reached 5 fouls!`, "error");
+                else if (player.stats.foul === 4) showToast(`⚠️ FOUL TROUBLE: ${player.name} has 4 fouls.`, "warning");
             }
 
             renderActivePlayers();
@@ -821,11 +839,21 @@
             return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        function openBoxScoreModal() {
+        function openBoxScoreModal(gameId = null) {
+            if (gameId) {
+                viewingGameData = appState.history.find(g => g.id === gameId);
+            } else {
+                viewingGameData = appState.activeGame;
+            }
+
+            if (!viewingGameData) return showToast("No game data found.", "error");
+
+            document.getElementById('box-score-title').innerText = `${viewingGameData.homeTeam} vs ${viewingGameData.opponent}`;
+
             const tbody = document.getElementById('box-score-body');
             tbody.innerHTML = '';
             
-            appState.activeGame.roster.forEach(player => {
+            viewingGameData.roster.forEach(player => {
                 const mins = formatMinutes(player.stats.secondsPlayed);
                 tbody.innerHTML += `
                     <tr>
@@ -837,7 +865,7 @@
                         <td class="px-4 py-3">${player.stats.ftm}-${player.stats.fta}</td>
                         <td class="px-4 py-3">${player.stats.reb}</td>
                         <td class="px-4 py-3">${player.stats.ast}</td>
-                        <td class="px-4 py-3 ${player.stats.foul >= 5 ? 'text-red-400 font-bold' : ''}">${player.stats.foul}</td>
+                        <td class="px-4 py-3 ${player.stats.foul >= 5 ? 'text-red-400 font-bold' : (player.stats.foul == 4 ? 'text-orange-400 font-bold' : '')}">${player.stats.foul}</td>
                         <td class="px-4 py-3">${player.stats.to}</td>
                         <td class="px-4 py-3 text-emerald-400">${mins}</td>
                     </tr>
@@ -847,10 +875,12 @@
         }
 
         function exportCSV() {
+            if (!viewingGameData) return;
+
             let csvContent = "data:text/csv;charset=utf-8,";
             csvContent += "Number,Name,MIN,PTS,FGM,FGA,FTM,FTA,REB,AST,FOUL,TO\n";
             
-            appState.activeGame.roster.forEach(p => {
+            viewingGameData.roster.forEach(p => {
                 const mins = formatMinutes(p.stats.secondsPlayed);
                 const s = p.stats;
                 csvContent += `${p.number},${p.name},${mins},${s.pts},${s.fgm},${s.fga},${s.ftm},${s.fta},${s.reb},${s.ast},${s.foul},${s.to}\n`;
@@ -859,8 +889,8 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            const gameName = appState.activeGame.opponent.replace(/\s+/g, '_');
-            link.setAttribute("download", `BoxScore_vs_${gameName}.csv`);
+            const gameName = viewingGameData.opponent.replace(/\s+/g, '_');
+            link.setAttribute("download", `BoxScore_${viewingGameData.homeTeam}_vs_${gameName}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link); 
