@@ -13,47 +13,39 @@
         body { background-color: #111827; color: white; touch-action: manipulation; user-select: none; }
         .digital-clock { font-family: 'Share Tech Mono', monospace; }
         button { -webkit-tap-highlight-color: transparent; }
+        /* Hide scrollbar for the active player row */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="h-screen flex flex-col items-center justify-between pb-8">
+<body class="h-screen flex flex-col justify-between pb-2 relative overflow-hidden">
 
-    <div class="w-full px-6 py-8 bg-gray-800 shadow-xl rounded-b-3xl">
-        <div class="flex justify-between items-center mb-4">
+    <div class="w-full px-6 py-6 bg-gray-800 shadow-xl rounded-b-3xl shrink-0 z-10">
+        <div class="flex justify-between items-center mb-2">
             <div class="text-center">
                 <p class="text-gray-400 text-sm font-bold tracking-widest uppercase">Home</p>
-                <p id="home-score" class="text-5xl font-bold text-white">0</p>
+                <p id="home-score" class="text-5xl font-bold text-white transition-all">0</p>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <p class="text-xs text-gray-400 font-semibold mb-1 uppercase tracking-widest">Qtr 1</p>
+                <div id="clock-display" onclick="toggleClock()" class="digital-clock text-5xl text-emerald-400 tracking-wider cursor-pointer active:scale-95 transition-transform">
+                    12:00
+                </div>
             </div>
             <div class="text-center">
                 <p class="text-gray-400 text-sm font-bold tracking-widest uppercase">Away</p>
                 <p id="away-score" class="text-5xl font-bold text-white">0</p>
             </div>
         </div>
-        
-        <div class="flex flex-col items-center justify-center mt-6">
-            <p class="text-xs text-gray-400 font-semibold mb-1 uppercase tracking-widest">Qtr 1</p>
-            <div id="clock-display" onclick="toggleClock()" class="digital-clock text-6xl text-emerald-400 tracking-wider cursor-pointer active:scale-95 transition-transform">
-                12:00
-            </div>
-            <p class="text-xs text-gray-500 mt-2">Tap clock to start/stop</p>
-        </div>
     </div>
 
-    <div class="w-full px-6 flex-grow flex flex-col justify-center">
-        <div class="bg-gray-800 rounded-2xl p-4 flex items-center justify-between shadow-lg border border-gray-700">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold shadow-inner">
-                    23
-                </div>
-                <div>
-                    <h2 class="text-xl font-bold">LeBron J.</h2>
-                    <p id="player-stats" class="text-gray-400 text-sm">Pts: 0 | Reb: 0 | Ast: 0</p>
-                </div>
+    <div class="w-full px-4 mt-4 shrink-0">
+        <p class="text-xs text-gray-400 font-semibold mb-2 uppercase tracking-widest px-2">On Court (Tap to Select)</p>
+        <div id="active-players-container" class="flex gap-3 overflow-x-auto no-scrollbar pb-2 px-2">
             </div>
-            <i data-lucide="chevron-down" class="text-gray-500"></i>
-        </div>
     </div>
 
-    <div class="w-full px-6 grid grid-cols-3 gap-4">
+    <div class="w-full px-4 grid grid-cols-3 gap-3 flex-grow content-center">
         <button onclick="recordStat('pts', 2)" class="bg-emerald-600 active:scale-95 transition-transform rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg shadow-emerald-900/50">
             <span class="text-2xl font-bold">+2</span>
             <span class="text-xs font-semibold opacity-80 mt-1 uppercase">Points</span>
@@ -85,6 +77,71 @@
         </button>
     </div>
 
+    <div class="w-full px-4 shrink-0 pb-4">
+        <div class="bg-gray-800 rounded-2xl p-2 flex justify-around shadow-lg border border-gray-700">
+            <button onclick="openModal('add-player-modal')" class="flex flex-col items-center p-2 text-gray-400 hover:text-white">
+                <i data-lucide="user-plus" class="mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider">Add</span>
+            </button>
+            <button onclick="openSubsModal()" class="flex flex-col items-center p-2 text-gray-400 hover:text-white">
+                <i data-lucide="arrow-right-left" class="mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider">Subs</span>
+            </button>
+            <button onclick="openBoxScoreModal()" class="flex flex-col items-center p-2 text-gray-400 hover:text-white">
+                <i data-lucide="clipboard-list" class="mb-1"></i>
+                <span class="text-[10px] uppercase font-bold tracking-wider">Sheet</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="add-player-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-6">
+        <div class="bg-gray-800 w-full max-w-sm rounded-3xl p-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">Add Player</h2>
+            <input type="text" id="new-player-name" placeholder="Player Name" class="w-full bg-gray-900 text-white rounded-xl p-3 mb-3 border border-gray-600 focus:outline-none focus:border-blue-500">
+            <input type="number" id="new-player-number" placeholder="Jersey Number" class="w-full bg-gray-900 text-white rounded-xl p-3 mb-6 border border-gray-600 focus:outline-none focus:border-blue-500">
+            <div class="flex gap-3">
+                <button onclick="closeModal('add-player-modal')" class="flex-1 bg-gray-700 py-3 rounded-xl font-bold active:scale-95 transition-transform">Cancel</button>
+                <button onclick="addNewPlayer()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold active:scale-95 transition-transform">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="subs-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col p-6">
+        <div class="flex justify-between items-center mb-6 mt-4">
+            <h2 class="text-2xl font-bold">Manage Lineup</h2>
+            <button onclick="closeModal('subs-modal')" class="bg-gray-800 p-2 rounded-full active:scale-95"><i data-lucide="x"></i></button>
+        </div>
+        <p class="text-sm text-gray-400 mb-4">Select 5 players to be on the court.</p>
+        <div id="roster-list" class="flex-grow overflow-y-auto space-y-3 pb-8">
+            </div>
+    </div>
+
+    <div id="box-score-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col p-6">
+        <div class="flex justify-between items-center mb-6 mt-4">
+            <h2 class="text-2xl font-bold">Box Score</h2>
+            <button onclick="closeModal('box-score-modal')" class="bg-gray-800 p-2 rounded-full active:scale-95"><i data-lucide="x"></i></button>
+        </div>
+        <div class="overflow-x-auto flex-grow bg-gray-900 rounded-xl border border-gray-700">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3">Player</th>
+                        <th class="px-4 py-3">PTS</th>
+                        <th class="px-4 py-3">REB</th>
+                        <th class="px-4 py-3">AST</th>
+                        <th class="px-4 py-3">FLS</th>
+                        <th class="px-4 py-3">TO</th>
+                    </tr>
+                </thead>
+                <tbody id="box-score-body" class="divide-y divide-gray-800">
+                    </tbody>
+            </table>
+        </div>
+        <button onclick="exportCSV()" class="mt-6 w-full bg-emerald-600 py-4 rounded-xl font-bold active:scale-95 transition-transform flex items-center justify-center gap-2">
+            <i data-lucide="download"></i> Download CSV Sheet
+        </button>
+    </div>
+
     <script>
         lucide.createIcons();
 
@@ -92,39 +149,44 @@
         let homeScore = 0;
         let awayScore = 0;
         
-        // Player Stats (We are tracking LeBron as an example)
-        let playerStats = { pts: 0, reb: 0, ast: 0, foul: 0, to: 0 };
+        // Roster Management
+        let roster = [
+            { id: 1, number: 23, name: "LeBron J.", stats: { pts: 0, reb: 0, ast: 0, foul: 0, to: 0 }, onCourt: true },
+            { id: 2, number: 3, name: "Anthony D.", stats: { pts: 0, reb: 0, ast: 0, foul: 0, to: 0 }, onCourt: true }
+        ];
+        let activePlayerId = 1; // The player currently selected to receive stats
 
-        // Timer State (12 minutes = 720 seconds)
+        // Timer State
         let timeRemaining = 720; 
         let timerInterval = null;
         let isClockRunning = false;
+
+        // --- UI INITIALIZATION ---
+        function init() {
+            updateClockDisplay();
+            renderActivePlayers();
+        }
 
         // --- THE CLOCK LOGIC ---
         function updateClockDisplay() {
             const minutes = Math.floor(timeRemaining / 60);
             const seconds = timeRemaining % 60;
-            // Pad with zero if single digit (e.g., 12:05 instead of 12:5)
-            const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            document.getElementById('clock-display').innerText = formattedTime;
+            document.getElementById('clock-display').innerText = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
         function toggleClock() {
-            vibrate(); // Haptic feedback
+            vibrate();
             const clockEl = document.getElementById('clock-display');
-
             if (isClockRunning) {
-                // Stop the clock
                 clearInterval(timerInterval);
                 isClockRunning = false;
                 clockEl.classList.remove('text-red-500');
                 clockEl.classList.add('text-emerald-400');
             } else {
-                // Start the clock
                 isClockRunning = true;
                 clockEl.classList.remove('text-emerald-400');
-                clockEl.classList.add('text-red-500'); // Turn red when running
-                
+                clockEl.classList.add('text-red-500');
                 timerInterval = setInterval(() => {
                     if (timeRemaining > 0) {
                         timeRemaining--;
@@ -134,36 +196,180 @@
                         isClockRunning = false;
                         alert("BZZZZZZ! Quarter Over!");
                     }
-                }, 1000); // Run every 1000 milliseconds (1 second)
+                }, 1000);
             }
+        }
+
+        // --- ROSTER & LINEUP LOGIC ---
+        function renderActivePlayers() {
+            const container = document.getElementById('active-players-container');
+            container.innerHTML = '';
+            
+            const onCourtPlayers = roster.filter(p => p.onCourt);
+            
+            // If active player was subbed out, default to the first available on-court player
+            if (!onCourtPlayers.find(p => p.id === activePlayerId) && onCourtPlayers.length > 0) {
+                activePlayerId = onCourtPlayers[0].id;
+            }
+
+            onCourtPlayers.forEach(player => {
+                const isActive = player.id === activePlayerId;
+                const activeClasses = isActive ? "bg-blue-600 ring-2 ring-white scale-105" : "bg-gray-700 opacity-70";
+                
+                container.innerHTML += `
+                    <div onclick="setActivePlayer(${player.id})" class="flex flex-col items-center cursor-pointer transition-all min-w-[70px]">
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold shadow-lg ${activeClasses}">
+                            ${player.number}
+                        </div>
+                        <p class="text-xs mt-1 font-semibold truncate w-full text-center ${isActive ? 'text-white' : 'text-gray-400'}">${player.name.split(' ')[0]}</p>
+                        <p class="text-[10px] text-emerald-400">${player.stats.pts}P ${player.stats.reb}R ${player.stats.ast}A</p>
+                    </div>
+                `;
+            });
+
+            if (onCourtPlayers.length === 0) {
+                container.innerHTML = `<p class="text-sm text-gray-500 py-4 italic">No players on court. Open Subs.</p>`;
+            }
+        }
+
+        function setActivePlayer(id) {
+            vibrate();
+            activePlayerId = id;
+            renderActivePlayers();
+        }
+
+        function addNewPlayer() {
+            const nameInput = document.getElementById('new-player-name').value;
+            const numberInput = document.getElementById('new-player-number').value;
+            
+            if (!nameInput || !numberInput) return alert("Please enter name and number.");
+
+            const onCourtCount = roster.filter(p => p.onCourt).length;
+            
+            roster.push({
+                id: Date.now(), // simple unique ID
+                number: numberInput,
+                name: nameInput,
+                stats: { pts: 0, reb: 0, ast: 0, foul: 0, to: 0 },
+                onCourt: onCourtCount < 5 // Automatically on court if less than 5 playing
+            });
+
+            document.getElementById('new-player-name').value = '';
+            document.getElementById('new-player-number').value = '';
+            closeModal('add-player-modal');
+            renderActivePlayers();
+        }
+
+        function toggleSub(id) {
+            const player = roster.find(p => p.id === id);
+            const onCourtCount = roster.filter(p => p.onCourt).length;
+
+            if (!player.onCourt && onCourtCount >= 5) {
+                alert("You already have 5 players on the court. Sub someone out first.");
+                return;
+            }
+
+            player.onCourt = !player.onCourt;
+            openSubsModal(); // Refresh the list
+            renderActivePlayers();
+        }
+
+        // --- MODAL CONTROLS ---
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openSubsModal() {
+            const list = document.getElementById('roster-list');
+            list.innerHTML = '';
+            
+            roster.forEach(player => {
+                const btnClass = player.onCourt ? "bg-red-900/50 text-red-400 border-red-700" : "bg-emerald-900/50 text-emerald-400 border-emerald-700";
+                const btnText = player.onCourt ? "Sub Out" : "Sub In";
+
+                list.innerHTML += `
+                    <div class="bg-gray-800 rounded-xl p-4 flex items-center justify-between border border-gray-700">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold">
+                                ${player.number}
+                            </div>
+                            <div>
+                                <h3 class="font-bold">${player.name}</h3>
+                                <p class="text-xs text-gray-400">${player.stats.pts} PTS | ${player.stats.reb} REB</p>
+                            </div>
+                        </div>
+                        <button onclick="toggleSub(${player.id})" class="px-4 py-2 border rounded-lg text-sm font-bold ${btnClass}">
+                            ${btnText}
+                        </button>
+                    </div>
+                `;
+            });
+            openModal('subs-modal');
+        }
+
+        function openBoxScoreModal() {
+            const tbody = document.getElementById('box-score-body');
+            tbody.innerHTML = '';
+            
+            roster.forEach(player => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-4 py-3 font-bold flex items-center gap-2">
+                            <span class="text-gray-500 text-xs w-4">${player.number}</span> ${player.name}
+                        </td>
+                        <td class="px-4 py-3">${player.stats.pts}</td>
+                        <td class="px-4 py-3">${player.stats.reb}</td>
+                        <td class="px-4 py-3">${player.stats.ast}</td>
+                        <td class="px-4 py-3">${player.stats.foul}</td>
+                        <td class="px-4 py-3">${player.stats.to}</td>
+                    </tr>
+                `;
+            });
+            openModal('box-score-modal');
         }
 
         // --- THE STAT LOGIC ---
         function recordStat(type, value) {
-            vibrate();
-
-            // 1. Update the player's personal stats
-            if (playerStats[type] !== undefined) {
-                playerStats[type] += value;
+            const player = roster.find(p => p.id === activePlayerId);
+            if (!player) {
+                alert("Please add a player to the roster and select them first.");
+                return;
             }
 
-            // 2. If it's points, update the team score too
+            vibrate();
+            player.stats[type] += value;
+
             if (type === 'pts') {
                 homeScore += value;
-                document.getElementById('home-score').innerText = homeScore;
-                
-                // Add a cool animation class temporarily
                 const scoreEl = document.getElementById('home-score');
+                scoreEl.innerText = homeScore;
                 scoreEl.classList.add('text-emerald-400', 'scale-110');
                 setTimeout(() => scoreEl.classList.remove('text-emerald-400', 'scale-110'), 200);
             }
 
-            // 3. Update the Player UI
-            document.getElementById('player-stats').innerText = 
-                `Pts: ${playerStats.pts} | Reb: ${playerStats.reb} | Ast: ${playerStats.ast}`;
+            // Update UI immediately
+            renderActivePlayers();
+        }
+
+        // --- EXPORT SHEET ---
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Number,Name,PTS,REB,AST,FOUL,TO\n";
             
-            // 4. Log the event to the console (View this in your browser developer tools)
-            console.log(`Event Logged: +${value} ${type.toUpperCase()} at ${document.getElementById('clock-display').innerText}`);
+            roster.forEach(p => {
+                csvContent += `${p.number},${p.name},${p.stats.pts},${p.stats.reb},${p.stats.ast},${p.stats.foul},${p.stats.to}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `BoxScore_Game.csv`);
+            document.body.appendChild(link); // Required for FF
+            link.click();
+            document.body.removeChild(link); 
         }
 
         // --- UTILITIES ---
@@ -171,8 +377,8 @@
             if (navigator.vibrate) { navigator.vibrate(50); }
         }
 
-        // Initialize UI on load
-        updateClockDisplay();
+        // Boot it up
+        init();
     </script>
 </body>
 </html>
